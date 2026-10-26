@@ -7,7 +7,7 @@ class LeaveType(models.TextChoices):
     RH = 'RH', 'Restricted Holiday'
     SCL = 'SCL', 'Special Casual Leave'
     EL = 'EL', 'Earned Leave'
-    COL = 'COL', 'Compensatory Off'
+    COL = 'COL', 'Commuted Leave'
     VL = 'VL', 'Vacation Leave'
 
 class LeaveDayPeriod(models.TextChoices):
