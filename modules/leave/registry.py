@@ -20,14 +20,28 @@ PERMISSIONS = [
     # Dedicated HR permissions for viewing all employees' data
     ("leave_cell.balances.view_all", "View all employees' leave balances"),
     ("leave_cell.requests.view_all", "View all employees' leave requests"),
+    ("leave_cell.requests.sanction", "Sanction, approve, or reject leave requests"),
 ]
 
 ROLE_GRANTS = {
     "employee": ["leave_cell.balances.view", "leave_cell.requests.manage"],
+    "unit_head": [
+        "leave_cell.balances.view",
+        "leave_cell.requests.manage",
+        "leave_cell.requests.view_all",
+        "leave_cell.requests.sanction",
+    ],
+    "sanctioning_authority": [
+        "leave_cell.balances.view",
+        "leave_cell.requests.manage",
+        "leave_cell.requests.view_all",
+        "leave_cell.requests.sanction",
+    ],
     "hr": [
         "leave_cell.balances.view",
         "leave_cell.requests.manage",
         "leave_cell.balances.view_all",
         "leave_cell.requests.view_all",
+        "leave_cell.requests.sanction",
     ],
 }

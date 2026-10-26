@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import LeaveRequest, LeaveBalance, LeaveType, LeaveDayPeriod
+from .models import LeaveRequest, LeaveBalance, LeaveType, LeaveDayPeriod, LeaveStatus
 from .domain.overlap import requests_overlap
+import decimal
 
 class LeaveBalanceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,11 +15,21 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
         default=LeaveDayPeriod.FULL_DAY,
         required=False,
     )
+    duration = serializers.DecimalField(
+        max_digits=5,
+        decimal_places=1,
+        read_only=True,
+    )
 
     class Meta:
         model = LeaveRequest
-        fields = ['id', 'employee_id', 'leave_type', 'start_date', 'end_date', 'reason', 'status', 'created_at', 'updated_at', 'day_period']
-        read_only_fields = ['id', 'employee_id', 'status', 'created_at', 'updated_at']
+        fields = [
+            'id', 'employee_id', 'leave_type', 'start_date', 'end_date',
+            'reason', 'status', 'day_period', 'is_station_leave',
+            'station_address', 'station_contact', 'substitute_id',
+            'rejection_reason', 'created_at', 'updated_at', 'duration'
+        ]
+        read_only_fields = ['id', 'employee_id', 'status', 'created_at', 'updated_at', 'rejection_reason', 'duration']
 
     def validate(self, attrs):
         # Ensure dates are present
@@ -40,6 +51,33 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
             if leave_type and leave_type != LeaveType.CL:
                 if period != LeaveDayPeriod.FULL_DAY:
                     raise serializers.ValidationError('Non-CL requests must use full_day period.')
+
+        # Substitute validation (cannot be oneself)
+        request = self.context.get('request')
+        employee_id = None
+        if request and hasattr(request, 'principal'):
+            employee_id = getattr(request.principal, 'username', None)
+
+        substitute_id = attrs.get('substitute_id')
+        if substitute_id and employee_id and substitute_id == employee_id:
+            raise serializers.ValidationError({'substitute_id': 'Applicant cannot be designated as their own substitute.'})
+
+        # Calculate requested duration
+        if period in (LeaveDayPeriod.FIRST_HALF, LeaveDayPeriod.SECOND_HALF):
+            dur = decimal.Decimal('0.5')
+        elif start_date and end_date:
+            dur = decimal.Decimal((end_date - start_date).days + 1)
+        else:
+            dur = decimal.Decimal('1.0')
+
+        # Balance check: if a balance record exists, ensure adequate credit
+        if employee_id and leave_type:
+            bal_obj = LeaveBalance.objects.filter(employee_id=employee_id, leave_type=leave_type).first()
+            if bal_obj and bal_obj.balance < dur:
+                raise serializers.ValidationError(
+                    f'Insufficient leave balance for {leave_type}. Available: {bal_obj.balance}, requested: {dur}.'
+                )
+
         return attrs
 
     def create(self, validated_data):

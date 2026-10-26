@@ -3,7 +3,7 @@ import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useAuth } from "../../../auth/AuthProvider";
 import { http, errorMessage } from "../../../lib/http";
 import { notifications } from "@mantine/notifications";
-import { Button, Modal, TextInput, Select, Textarea } from "@mantine/core";
+import { Button, Modal, TextInput, Select, Textarea, Checkbox, Group } from "@mantine/core";
 
 export function NewLeaveRequest() {
   const { can } = useAuth();
@@ -14,17 +14,30 @@ export function NewLeaveRequest() {
   const [endDate, setEndDate] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [dayPeriod, setDayPeriod] = useState<"full_day" | "first_half" | "second_half">("full_day");
+  const [isStationLeave, setIsStationLeave] = useState(false);
+  const [stationAddress, setStationAddress] = useState("");
+  const [stationContact, setStationContact] = useState("");
+  const [substituteId, setSubstituteId] = useState("");
 
   const mutation = useMutation({
     mutationFn: async () => {
       if (!type || !startDate || !endDate) throw new Error("Missing required fields");
-      await http.post("/leave/requests/", {
+      const payload: Record<string, any> = {
         leave_type: type,
         start_date: startDate,
         end_date: endDate,
         reason,
         day_period: dayPeriod,
-      });
+      };
+      if (isStationLeave) {
+        payload.is_station_leave = true;
+        payload.station_address = stationAddress;
+        payload.station_contact = stationContact;
+      }
+      if (substituteId.trim()) {
+        payload.substitute_id = substituteId.trim();
+      }
+      await http.post("/leave/requests/", payload);
     },
     onSuccess: () => {
       notifications.show({ title: "Success", message: "Leave request submitted" });
@@ -34,6 +47,10 @@ export function NewLeaveRequest() {
       setEndDate(null);
       setReason("");
       setDayPeriod("full_day");
+      setIsStationLeave(false);
+      setStationAddress("");
+      setStationContact("");
+      setSubstituteId("");
       queryClient.invalidateQueries({ queryKey: ["leave-requests"] });
     },
     onError: (e) => {
@@ -47,7 +64,12 @@ export function NewLeaveRequest() {
     mutation.mutate();
   };
 
-  const isSubmitDisabled = !type || !startDate || !endDate || (endDate && startDate && endDate < startDate) || mutation.isPending;
+  const isSubmitDisabled =
+    !type ||
+    !startDate ||
+    !endDate ||
+    (endDate && startDate && endDate < startDate) ||
+    mutation.isPending;
 
   const handleTypeChange = (value: string | null) => {
     setType(value);
@@ -60,7 +82,6 @@ export function NewLeaveRequest() {
     if (value === null) {
       setDayPeriod("full_day");
     } else {
-      // Type assertion is safe because the Select options only provide valid values
       setDayPeriod(value as "full_day" | "first_half" | "second_half");
     }
   };
@@ -72,12 +93,12 @@ export function NewLeaveRequest() {
         <Select
           label="Type"
           data={[
-            { value: "CL", label: "CL" },
-            { value: "RH", label: "RH" },
-            { value: "SCL", label: "SCL" },
-            { value: "EL", label: "EL" },
-            { value: "COL", label: "COL" },
-            { value: "VL", label: "VL" },
+            { value: "CL", label: "Casual Leave" },
+            { value: "RH", label: "Restricted Holiday" },
+            { value: "SCL", label: "Special Casual Leave" },
+            { value: "EL", label: "Earned Leave" },
+            { value: "COL", label: "Commuted Leave" },
+            { value: "VL", label: "Vacation Leave" },
           ]}
           value={type}
           onChange={handleTypeChange}
@@ -113,15 +134,48 @@ export function NewLeaveRequest() {
           required
           mt="sm"
         />
+        <TextInput
+          label="Proposed Substitute ID"
+          placeholder="e.g. employee username"
+          value={substituteId}
+          onChange={(e) => setSubstituteId(e.currentTarget.value)}
+          mt="sm"
+        />
         <Textarea
           label="Reason"
           value={reason}
           onChange={(e) => setReason(e.currentTarget.value)}
           mt="sm"
         />
-        <Button onClick={handleSubmit} fullWidth mt="md" disabled={isSubmitDisabled} loading={mutation.isPending}>
-          Submit
-        </Button>
+        <Checkbox
+          label="Station Leave (leaving headquarters)"
+          checked={isStationLeave}
+          onChange={(e) => setIsStationLeave(e.currentTarget.checked)}
+          mt="md"
+        />
+        {isStationLeave && (
+          <>
+            <TextInput
+              label="Station Address"
+              placeholder="Address during station leave"
+              value={stationAddress}
+              onChange={(e) => setStationAddress(e.currentTarget.value)}
+              mt="xs"
+            />
+            <TextInput
+              label="Emergency Contact"
+              placeholder="Contact phone/details"
+              value={stationContact}
+              onChange={(e) => setStationContact(e.currentTarget.value)}
+              mt="xs"
+            />
+          </>
+        )}
+        <Group justify="flex-end" mt="md">
+          <Button onClick={handleSubmit} fullWidth disabled={isSubmitDisabled} loading={mutation.isPending}>
+            Submit
+          </Button>
+        </Group>
       </Modal>
     </>
   );
