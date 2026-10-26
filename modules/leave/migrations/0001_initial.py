@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('employee_id', models.CharField(max_length=64)),
-                ('leave_type', models.CharField(max_length=4, choices=[('CL', 'Casual Leave'), ('RH', 'Restricted Holiday'), ('SCL', 'Special Casual Leave'), ('EL', 'Earned Leave'), ('COL', 'Compensatory Off'), ('VL', 'Vacation Leave')])),
+                ('leave_type', models.CharField(max_length=4, choices=[('CL', 'Casual Leave'), ('RH', 'Restricted Holiday'), ('SCL', 'Special Casual Leave'), ('EL', 'Earned Leave'), ('COL', 'Commuted Leave'), ('VL', 'Vacation Leave')])),
                 ('balance', models.DecimalField(default=0, decimal_places=1, max_digits=5)),
                 ('last_updated', models.DateTimeField(auto_now=True)),
             ],
@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('employee_id', models.CharField(max_length=64)),
-                ('leave_type', models.CharField(max_length=4, choices=[('CL', 'Casual Leave'), ('RH', 'Restricted Holiday'), ('SCL', 'Special Casual Leave'), ('EL', 'Earned Leave'), ('COL', 'Compensatory Off'), ('VL', 'Vacation Leave')])),
+                ('leave_type', models.CharField(max_length=4, choices=[('CL', 'Casual Leave'), ('RH', 'Restricted Holiday'), ('SCL', 'Special Casual Leave'), ('EL', 'Earned Leave'), ('COL', 'Commuted Leave'), ('VL', 'Vacation Leave')])),
                 ('start_date', models.DateField()),
                 ('end_date', models.DateField()),
                 ('reason', models.TextField(blank=True)),
