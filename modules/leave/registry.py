@@ -17,9 +17,17 @@ NAV_ITEMS = [
 PERMISSIONS = [
     ("leave_cell.balances.view", "View leave balances"),
     ("leave_cell.requests.manage", "Create and manage leave requests"),
+    # Dedicated HR permissions for viewing all employees' data
+    ("leave_cell.balances.view_all", "View all employees' leave balances"),
+    ("leave_cell.requests.view_all", "View all employees' leave requests"),
 ]
 
 ROLE_GRANTS = {
     "employee": ["leave_cell.balances.view", "leave_cell.requests.manage"],
-    "hr": ["leave_cell.balances.view", "leave_cell.requests.manage"],
+    "hr": [
+        "leave_cell.balances.view",
+        "leave_cell.requests.manage",
+        "leave_cell.balances.view_all",
+        "leave_cell.requests.view_all",
+    ],
 }

@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+import decimal
 
 class LeaveType(models.TextChoices):
     CL = 'CL', 'Casual Leave'
@@ -8,6 +9,11 @@ class LeaveType(models.TextChoices):
     EL = 'EL', 'Earned Leave'
     COL = 'COL', 'Compensatory Off'
     VL = 'VL', 'Vacation Leave'
+
+class LeaveDayPeriod(models.TextChoices):
+    FULL_DAY = 'full_day', 'Full Day'
+    FIRST_HALF = 'first_half', 'First Half'
+    SECOND_HALF = 'second_half', 'Second Half'
 
 class LeaveBalance(models.Model):
     employee_id = models.CharField(max_length=64)
@@ -25,8 +31,17 @@ class LeaveRequest(models.Model):
     end_date = models.DateField()
     reason = models.TextField(blank=True)
     status = models.CharField(max_length=20, default='pending')
+    day_period = models.CharField(
+        max_length=12,
+        choices=LeaveDayPeriod.choices,
+        default=LeaveDayPeriod.FULL_DAY,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def duration(self):
-        return (self.end_date - self.start_date).days + 1
+        if self.day_period in (LeaveDayPeriod.FIRST_HALF, LeaveDayPeriod.SECOND_HALF):
+            return decimal.Decimal('0.5')
+        # Full day: inclusive calendar-day count
+        days = (self.end_date - self.start_date).days + 1
+        return decimal.Decimal(days)
